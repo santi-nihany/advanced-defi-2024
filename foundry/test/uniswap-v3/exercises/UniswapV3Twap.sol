@@ -48,19 +48,27 @@ contract UniswapV3Twap {
         view
         returns (uint256 amountOut)
     {
+        address tokenOut;
         // Task 1 - Require tokenIn is token0 or token1
         // Task 2 - Assign tokenOut
-        address tokenOut;
+        if (tokenIn == token0) {
+            tokenOut = token1;
+        } else if (tokenIn == token1) {
+            tokenOut = token0;
+        } else {
+            revert("TokenIn not allowed");
+        }
 
         // Task 3 - Fill out timeDeltas with dt and 0
         uint32[] memory timeDeltas = new uint32[](2);
-
+        timeDeltas[0] = dt;
         // Task 4 - Call pool.observe
+        (int56[] memory tickCumulatives,) = pool.observe(timeDeltas);
         // Task 5 - Calculate tickCumulativeDelta
-        int56 tickCumulativeDelta;
+        int56 tickCumulativeDelta = tickCumulatives[1] - tickCumulatives[0];
 
         // Task 6 - Calculate average tick
-        int24 tick;
+        int24 tick = int24(tickCumulativeDelta / int56(uint56(dt)));
 
         // Always round to negative infinity
         if (
@@ -71,5 +79,6 @@ contract UniswapV3Twap {
         }
 
         // Task 7 - Call getQuoteAtTick
+        amountOut = getQuoteAtTick(tick, amountIn, tokenIn, tokenOut);
     }
 }
